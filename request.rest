@@ -1,0 +1,49 @@
+GET http://localhost:5000/users
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsIm5hbWEiOiJJaWYgQWxpZmFoIiwiZW1haWwiOiJpaWZBbGlmYWhAZ21haWwuY29tIiwicm9sZSI6ImRvc2VuIiwiaWF0IjoxNzQ2NzU4MjI5LCJleHAiOjE3NDY3NTgyNDR9.nSiAJj2YjtA9G3QGr08ZYH4g-O0VeizYts-yj_SlMbg
+###
+POST http://localhost:5000/users
+Content-Type: application/json
+
+{
+    "nama": "Iif",
+    "nim": 2110131220013,
+    "email": "iifAlifah@gmail.com",
+    "password": "123456",
+    "konfPassword": "123456"
+}
+
+###
+POST http://localhost:5000/login 
+Content-Type: application/json
+
+{
+    "email" : "iifAlifah@gmail.com",
+    "password": "121212"
+}
+
+###
+GET http://localhost:5000/token
+
+###
+DELETE http://localhost:5000/logout 
+
+###
+GET http://localhost:5000/nilai/jenis/1
+
+
+###
+GET http://localhost:5000/mahasiswa
+
+
+###
+POST http://localhost:5000/nilai
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "jenisKuisId": 2,
+  "nilai": 85.5,
+  "benar": 17,
+  "salah": 3
+}
+
