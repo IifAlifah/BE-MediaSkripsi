@@ -5,16 +5,63 @@ import Dosen from "../models/DosenModel.js";
 import { Op } from "sequelize";
 
 // Nilai terakhir per mahasiswa
-export const getNilaiTerakhirPerKuis = async (req, res) => {
+// export const getNilaiTerakhirPerKuis = async (req, res) => {
+//   const { jenisKuis } = req.params;
+//   const userId = req.user.userId;
+
+//   try {
+//     const dosen = await Dosen.findOne({ where: { userId } });
+//     if (!dosen) return res.status(403).json({ message: "Dosen tidak ditemukan" });
+
+//     const semuaNilai = await Nilai.findAll({
+//       where: { jenis_kuis: jenisKuis },
+//       include: [
+//         {
+//           model: Mahasiswa,
+//           as: "Mahasiswa",
+//           where: { token_kelas: dosen.token },
+//           include: {
+//             model: User,
+//             as: "user",
+//             attributes: ['nama']
+//           }
+//         }
+//       ],
+//       order: [['nilai', 'DESC']]
+//     });
+
+//     const mapTerakhir = new Map();
+//     semuaNilai.forEach(n => {
+//       if (!mapTerakhir.has(n.mahasiswaId)) mapTerakhir.set(n.mahasiswaId, n);
+//     });
+
+//     res.json([...mapTerakhir.values()]);
+//   } catch (err) {
+//     res.status(500).json({ message: "Gagal ambil nilai terakhir", error: err.message });
+//   }
+// };
+
+export const getNilaiPertamaLulusPerKuis = async (req, res) => {
   const { jenisKuis } = req.params;
   const userId = req.user.userId;
 
   try {
+    // Cari dosen sesuai user login
     const dosen = await Dosen.findOne({ where: { userId } });
     if (!dosen) return res.status(403).json({ message: "Dosen tidak ditemukan" });
 
-    const semuaNilai = await Nilai.findAll({
-      where: { jenis_kuis: jenisKuis },
+    const KKM = dosen.kkm; // Ambil KKM dari dosen
+
+    if (KKM === undefined || KKM === null) {
+      return res.status(400).json({ message: "KKM belum ditetapkan oleh dosen" });
+    }
+
+    // Ambil nilai yang memenuhi KKM dan jenis kuis sesuai
+    const semuaNilaiLulus = await Nilai.findAll({
+      where: {
+        jenis_kuis: jenisKuis,
+        nilai: { [Op.gte]: KKM },
+      },
       include: [
         {
           model: Mahasiswa,
@@ -23,21 +70,27 @@ export const getNilaiTerakhirPerKuis = async (req, res) => {
           include: {
             model: User,
             as: "user",
-            attributes: ['nama']
-          }
-        }
+            attributes: ["nama"],
+          },
+        },
       ],
-      order: [['nilai', 'DESC']]
+      order: [["createdAt", "ASC"]], // Urutkan dari yang paling awal
     });
 
-    const mapTerakhir = new Map();
-    semuaNilai.forEach(n => {
-      if (!mapTerakhir.has(n.mahasiswaId)) mapTerakhir.set(n.mahasiswaId, n);
+    // Ambil nilai pertama yang lulus untuk tiap mahasiswa
+    const nilaiPertamaLulus = new Map();
+    semuaNilaiLulus.forEach((n) => {
+      if (!nilaiPertamaLulus.has(n.mahasiswaId)) {
+        nilaiPertamaLulus.set(n.mahasiswaId, n);
+      }
     });
 
-    res.json([...mapTerakhir.values()]);
-  } catch (err) {
-    res.status(500).json({ message: "Gagal ambil nilai terakhir", error: err.message });
+    res.status(200).json([...nilaiPertamaLulus.values()]);
+  } catch (error) {
+    res.status(500).json({
+      message: "Gagal mengambil data nilai pertama yang lulus",
+      error: error.message,
+    });
   }
 };
 
@@ -118,7 +171,7 @@ export const deleteNilai = async (req, res) => {
 // Simpan nilai
 export const saveNilai = async (req, res) => {
   try {
-    const { mahasiswaId, jenisKuis, nilai, benar, salah } = req.body;
+    const { mahasiswaId, jenisKuis, nilai, benar, salah, waktu_pengerjaan } = req.body;
 
     if (!mahasiswaId || !jenisKuis || nilai === undefined) {
       return res.status(400).json({ message: "Data tidak lengkap" });
@@ -134,7 +187,8 @@ export const saveNilai = async (req, res) => {
       jenis_kuis: jenisKuis,
       nilai,
       benar,
-      salah
+      salah,
+      waktu_pengerjaan
     });
 
     res.status(201).json({ message: "Nilai berhasil disimpan" });
@@ -142,48 +196,6 @@ export const saveNilai = async (req, res) => {
     res.status(500).json({ message: "Gagal menyimpan nilai", error: error.message });
   }
 };
-
-// export const getNilaiMencapaiKKM = async (req, res) => {
-//   const { jenisKuis } = req.params;
-//   const userId = req.user.userId; // mahasiswa login
-//   const KKM = 70;
-
-//   try {
-//     // Ambil data mahasiswa berdasarkan userId login
-//     const mahasiswa = await Mahasiswa.findOne({
-//       where: { userId }
-//     });
-
-//     if (!mahasiswa) {
-//       return res.status(404).json({ message: "Mahasiswa tidak ditemukan" });
-//     }
-
-//     // Cari nilai-nilai mahasiswa yang mencapai KKM
-//     const nilaiLulus = await Nilai.findAll({
-//       where: {
-//         jenis_kuis: jenisKuis,
-//         mahasiswaId: mahasiswa.id,
-//         nilai: {
-//           [Op.gte]: KKM
-//         }
-//       },
-//       order: [['waktu_pengerjaan', 'ASC']],
-//       include: {
-//         model: Mahasiswa,
-//         as: "Mahasiswa",
-//         include: {
-//           model: User,
-//           as: "user",
-//           attributes: ['nama']
-//         }
-//       }
-//     });
-
-//     res.status(200).json(nilaiLulus);
-//   } catch (error) {
-//     res.status(500).json({ message: "Gagal mengambil data nilai", error: error.message });
-//   }
-// };
 
 export const getNilaiByMahasiswaAndKuis = async (req, res) => {
   const { mahasiswaId, jenisKuis } = req.query;
@@ -209,6 +221,7 @@ export const getNilaiByMahasiswaAndKuis = async (req, res) => {
       nilai: nilaiTerbaru.nilai,
       benar: nilaiTerbaru.benar,
       salah: nilaiTerbaru.salah,
+      waktu_pengerjaan: nilaiTerbaru.waktu_pengerjaan, 
     });
   } catch (error) {
     res.status(500).json({ message: "Gagal mengambil nilai", error: error.message });
@@ -278,4 +291,58 @@ export const getAllNilai = async (req, res) => {
     res.status(500).json({ message: "Gagal mengambil data nilai", error: error.message });
   }
 };
+
+export const getStatistikNilai = async (req, res) => {
+  const userId = req.user.userId;
+
+  const jenisKuisToLabel = {
+    "Pendahuluan": "kuis1",
+    "Mengakses Elemen": "kuis2",
+    "Manipulasi Konten": "kuis3",
+    "Event DOM": "kuis4",
+    "Form DOM": "kuis5",
+    "Evaluasi": "evaluasi"
+  };
+
+  try {
+    const dosen = await Dosen.findOne({ where: { userId } });
+    if (!dosen) return res.status(403).json({ message: "Dosen tidak ditemukan" });
+
+    const semuaNilai = await Nilai.findAll({
+      include: [
+        {
+          model: Mahasiswa,
+          as: "Mahasiswa",
+          where: { token_kelas: dosen.token }
+        }
+      ],
+      attributes: ["jenis_kuis", "nilai"] // ganti dari judul_kuis ke jenis_kuis
+    });
+
+    const statistik = {};
+
+    semuaNilai.forEach(({ jenis_kuis, nilai }) => {
+      const label = jenisKuisToLabel[jenis_kuis];
+      if (!label) return;
+      if (!statistik[label]) statistik[label] = [];
+      statistik[label].push(nilai);
+    });
+
+    const hasil = {};
+    for (const label in statistik) {
+      const nilaiList = statistik[label];
+      const total = nilaiList.reduce((a, b) => a + b, 0);
+      hasil[label] = {
+        rata: Number((total / nilaiList.length).toFixed(2)),
+        min: Math.min(...nilaiList),
+        max: Math.max(...nilaiList)
+      };
+    }
+
+    res.status(200).json(hasil);
+  } catch (error) {
+    res.status(500).json({ message: "Gagal menghitung statistik nilai", error: error.message });
+  }
+};
+
 

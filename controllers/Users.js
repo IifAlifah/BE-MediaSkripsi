@@ -36,36 +36,61 @@ export const getDosen = async (req, res) => {
 
 // REGISTER
 export const Register = async (req, res) => {
-  const { nama, nim, nip, email, password, konfPassword, role, token_kelas} = req.body;
+  const { nama, nim, nip, email, password, konfPassword, role, token_kelas } = req.body;
 
+  // Cek email sudah terdaftar
   const existingUser = await Users.findOne({ where: { email } });
   if (existingUser) {
     return res.status(400).json({ msg: "Email sudah terdaftar" });
   }
-  
-  // Validasi password
+
+  // Validasi password dan konfirmasi
   if (password !== konfPassword) {
     return res.status(400).json({ msg: "Password dan Konfirmasi Password tidak cocok" });
   }
 
-  // Validasi nim/nip sesuai role
-  if (role === "mahasiswa" && !nim) {
-    return res.status(400).json({ msg: "NIM wajib diisi untuk mahasiswa" });
+  // Validasi berdasarkan role
+  if (role === "mahasiswa") {
+    if (!nim) {
+      return res.status(400).json({ msg: "NIM wajib diisi untuk mahasiswa" });
+    }
+    if (!token_kelas) {
+      return res.status(400).json({ msg: "Token kelas wajib diisi untuk mahasiswa" });
+    }
+
+    // Cegah mahasiswa duplikat berdasarkan NIM dan token_kelas
+    const existingMahasiswa = await Mahasiswa.findOne({
+      where: {
+        nim: nim,
+        token_kelas: token_kelas
+      }
+    });
+    if (existingMahasiswa) {
+      return res.status(400).json({ msg: "Mahasiswa dengan NIM ini sudah terdaftar" });
+    }
   }
 
-  if (role === "mahasiswa" && !token_kelas) {
-    return res.status(400).json({ msg: "Token kelas wajib diisi untuk mahasiswa" });
-  }
+  if (role === "dosen") {
+    if (!nip) {
+      return res.status(400).json({ msg: "NIP wajib diisi untuk dosen" });
+    }
 
-  if (role === "dosen" && !nip) {
-    return res.status(400).json({ msg: "NIP wajib diisi untuk dosen" });
+    // Cegah dosen duplikat berdasarkan NIP
+    const existingDosen = await Dosen.findOne({
+      where: {
+        nip: nip
+      }
+    });
+    if (existingDosen) {
+      return res.status(400).json({ msg: "NIP sudah terdaftar" });
+    }
   }
 
   try {
     const salt = await bcrypt.genSalt();
     const hashPassword = await bcrypt.hash(password, salt);
 
-    // Buat user baru (tanpa nim/nip)
+    // Buat user baru
     const newUser = await Users.create({
       nama,
       email,
@@ -73,7 +98,7 @@ export const Register = async (req, res) => {
       role
     });
 
-    // Masukkan data tambahan ke tabel Mahasiswa atau Dosen
+    // Masukkan data tambahan ke Mahasiswa atau Dosen
     if (role === "mahasiswa") {
       await Mahasiswa.create({
         userId: newUser.id,
@@ -82,14 +107,12 @@ export const Register = async (req, res) => {
         progress: 0
       });
     } else if (role === "dosen") {
-      if (newUser.role === "dosen") {
-        const token = generateToken(); // buat token baru secara otomatis
-        await Dosen.create({
-          userId: newUser.id,
-          nip: nip,
-          token: token // gunakan field yang sesuai dengan model
-        });
-      }
+      const token = generateToken(); // fungsi pembuat token unik untuk dosen
+      await Dosen.create({
+        userId: newUser.id,
+        nip: nip,
+        token: token
+      });
     }
 
     res.status(201).json({ msg: "Registrasi berhasil" });
@@ -98,6 +121,7 @@ export const Register = async (req, res) => {
     res.status(500).json({ msg: "Terjadi kesalahan saat registrasi" });
   }
 };
+
 
 
 // LOGIN

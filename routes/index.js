@@ -3,8 +3,7 @@ import { getUsers, Login, Logout, Register } from "../controllers/Users.js";
 import { 
   getTokenKelas, 
   updateKkm,
-  getJumlahMahasiswa,
-  getStatistikNilai
+  getJumlahMahasiswa
  } from "../controllers/Dosen.js";
 import { 
   getMahasiswaByDosenToken, 
@@ -19,18 +18,23 @@ import {
 import { verifyToken } from "../middleware/VerifyToken.js"; // Pastikan middleware ini digunakan
 import { refreshToken } from "../controllers/RefreshToken.js";
 import {
-  getNilaiTerakhirPerKuis,
+  // getNilaiTerakhirPerKuis,
   getDetailNilaiMahasiswa,
   deleteNilai,
   saveNilai,
   getNilaiTerbaruByMahasiswaAndKuis,
   getNilaiByMahasiswaAndKuis,
-  getAllNilai
+  getAllNilai,
+  getStatistikNilai,
+  getNilaiPertamaLulusPerKuis
 } from "../controllers/Nilai.js";
 
 const router = express.Router();
 
 // Auth & Users
+router.get('/', (req, res) => {
+  res.send('Welcome to the API');
+}); // Endpoint untuk testing
 router.get('/users', verifyToken, getUsers); // Verifikasi token untuk mengambil data users
 router.post('/users', Register);
 router.post('/login', Login);
@@ -39,13 +43,15 @@ router.delete('/logout', Logout);
 
 
 // Nilai
-router.get('/nilai/jenis/:jenisKuis', verifyToken, getNilaiTerakhirPerKuis); // ← gunakan string
+// router.get('/nilai/jenis/:jenisKuis', verifyToken, getNilaiTerakhirPerKuis); // ← gunakan string
 router.get('/nilai/jenis/:jenisKuis/mahasiswa/:mahasiswaId',verifyToken, getDetailNilaiMahasiswa);
 router.delete('/nilai/:id', verifyToken, deleteNilai);
 router.post("/nilai", saveNilai);
 router.get("/nilai/terbaru", getNilaiTerbaruByMahasiswaAndKuis);
 router.get('/nilai/:jenisKuis', verifyToken, getNilaiByMahasiswaAndKuis);
+router.get("/nilai/jenis/:jenisKuis", verifyToken, getNilaiPertamaLulusPerKuis);
 router.get("/nilai", verifyToken, getAllNilai);
+router.get('/statistik-nilai', verifyToken, getStatistikNilai);
 
 // Progress
 router.get("/progress", verifyToken, getProgressMahasiswa);
@@ -57,7 +63,7 @@ router.get("/progress/selesai", verifyToken, getMahasiswaSelesai);
 router.get("/token-kelas", verifyToken, getTokenKelas);  // Menambahkan middleware verifyToken
 router.post("/update-kkm", verifyToken, updateKkm);      // Menambahkan middleware verifyToken
 router.get("/jumlah-mahasiswa", verifyToken, getJumlahMahasiswa);
-router.get('/statistik-nilai', verifyToken, getStatistikNilai);
+
 
 // Dosen
 router.get("/mahasiswa", verifyToken, getMahasiswaByDosenToken);

@@ -83,32 +83,32 @@ export const getJumlahMahasiswa = async (req, res) => {
   }
 };
 
-export const getStatistikNilai = async (req, res) => {
-  try {
-    const { tokenKelas } = req.user; // Ambil token kelas dari token login
+// export const getStatistikNilai = async (req, res) => {
+//   try {
+//     const { tokenKelas } = req.user; // Ambil token kelas dari token login
 
-    const hasil = await Nilai.findAll({
-      attributes: [
-        [Sequelize.fn('AVG', Sequelize.col('nilai')), 'rataRata'],
-        [Sequelize.fn('MAX', Sequelize.col('nilai')), 'nilaiTertinggi'],
-        [Sequelize.fn('MIN', Sequelize.col('nilai')), 'nilaiTerendah']
-      ],
-      include: [{
-        model: Mahasiswa,
-        where: { tokenKelas },
-        attributes: [] // tidak perlu ambil data mahasiswa
-      }],
-      raw: true
-    });
+//     const hasil = await Nilai.findAll({
+//       attributes: [
+//         [Sequelize.fn('AVG', Sequelize.col('nilai')), 'rataRata'],
+//         [Sequelize.fn('MAX', Sequelize.col('nilai')), 'nilaiTertinggi'],
+//         [Sequelize.fn('MIN', Sequelize.col('nilai')), 'nilaiTerendah']
+//       ],
+//       include: [{
+//         model: Mahasiswa,
+//         where: { tokenKelas },
+//         attributes: [] // tidak perlu ambil data mahasiswa
+//       }],
+//       raw: true
+//     });
 
-    res.json({
-      rataRata: parseFloat(hasil[0].rataRata).toFixed(2),
-      nilaiTertinggi: hasil[0].nilaiTertinggi,
-      nilaiTerendah: hasil[0].nilaiTerendah
-    });
+//     res.json({
+//       rataRata: parseFloat(hasil[0].rataRata).toFixed(2),
+//       nilaiTertinggi: hasil[0].nilaiTertinggi,
+//       nilaiTerendah: hasil[0].nilaiTerendah
+//     });
 
-  } catch (error) {
-    console.error("Gagal mengambil statistik nilai:", error);
-    res.status(500).json({ msg: "Terjadi kesalahan pada server" });
-  }
-};
+//   } catch (error) {
+//     console.error("Gagal mengambil statistik nilai:", error);
+//     res.status(500).json({ msg: "Terjadi kesalahan pada server" });
+//   }
+// };

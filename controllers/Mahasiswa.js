@@ -216,28 +216,3 @@ export const getMahasiswaSelesai = async (req, res) => {
   }
 };
 
-// export const getProgressPersenMahasiswa = async (req, res) => {
-//   try {
-//     const mahasiswaId = req.user.mahasiswaId; // Ambil dari token (middleware)
-//     const TOTAL_LEVEL = 23; // Jumlah level maksimal atau total halaman
-
-//     const mahasiswa = await Mahasiswa.findByPk(mahasiswaId);
-
-//     if (!mahasiswa) {
-//       return res.status(404).json({ message: "Mahasiswa tidak ditemukan" });
-//     }
-
-//     const progress = mahasiswa.progress ?? 0;
-//     const percentage = Math.round((progress / TOTAL_LEVEL) * 100);
-
-//     return res.status(200).json({
-//       progress,
-//       total: TOTAL_LEVEL,
-//       percentage
-//     });
-//   } catch (error) {
-//     console.error("Error getProgressPersenMahasiswa:", error);
-//     res.status(500).json({ message: error.message });
-//   }
-// };
-
